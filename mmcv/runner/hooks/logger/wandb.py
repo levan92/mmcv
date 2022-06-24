@@ -51,6 +51,7 @@ class WandbLoggerHook(LoggerHook):
     def __init__(self,
                  init_kwargs: Optional[Dict] = None,
                  interval: int = 10,
+                 eval_interval: int = -1,
                  ignore_last: bool = True,
                  reset_flag: bool = False,
                  commit: bool = True,
@@ -65,6 +66,8 @@ class WandbLoggerHook(LoggerHook):
         self.with_step = with_step
         self.log_artifact = log_artifact
         self.out_suffix = out_suffix
+        self.eval_interval = eval_interval
+        self.eval_step = False
 
     def import_wandb(self) -> None:
         try:
@@ -88,12 +91,19 @@ class WandbLoggerHook(LoggerHook):
     def log(self, runner) -> None:
         tags = self.get_loggable_tags(runner)
         if tags:
+            step = self.get_iter(runner)
+            if not self.by_epoch and self.eval_interval > 0 and (step%self.eval_interval) == 0 and not self.eval_step:
+                commit = False 
+                self.eval_step = True # eval step next 
+            else: 
+                commit = self.commit
+                self.eval_step = False
             if self.with_step:
                 self.wandb.log(
-                    tags, step=self.get_iter(runner), commit=self.commit)
+                    tags, step=step, commit=commit)
             else:
-                tags['global_step'] = self.get_iter(runner)
-                self.wandb.log(tags, commit=self.commit)
+                tags['global_step'] = step
+                self.wandb.log(tags, commit=commit)
 
     @master_only
     def after_run(self, runner) -> None:
