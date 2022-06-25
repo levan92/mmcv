@@ -74,6 +74,11 @@ Note: MMCV requires Python 3.6+.
 
 ## Installation
 
+```bash
+MMCV_WITH_OPS=1 python3 -m pip install -e .
+```
+
+
 There are two versions of MMCV:
 
 - **mmcv-full**: comprehensive, with full features and various CUDA ops out of box. It takes longer time to build.
